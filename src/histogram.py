@@ -8,27 +8,39 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 
 def plot_overlayed_hist(data,loc,sensitivity,size):
-    """
-    plot the histogram (PDF) of pixel intensities for each sensitivity setting on the camera.
+    x, y = loc
+    h, w = size
     
-    Hint: How to make nice histograms ?!
-    1. Use the plt.his function
-    2. Use alpha around 0.8
-    3. you can use the option ec="k"
-    4. You can use density=True
+    # Extract pixel intensities at the specified location and size
+    pixel_data = data[y:y+h, x:x+w, :, :, :]  # Shape: (h, w, #colors, #images, #sensitivity)
+
+    # Reshape to flatten dimensions except sensitivity
+    pixel_data = pixel_data.reshape((h * w * pixel_data.shape[2], -1))  # Shape: (h*w*#colors, #images*#sensitivity)
     
-    args:
-        data(np.ndarray): (H, W, #colors, #images, #sensitivity) array of captured pixel intensities
-        loc(np.ndarray): (y,x) 2D location of pixel to plot histogram
-        sensitivity(np.ndarray): (#sensitivity) array of camera sensitivity settings
-        size(np.ndarray): (h,w) of pixels to include in histogram 
-        
-    output:
-        void, but you should plot the graphs! hint: try looking at plt.hist
-    """
-    raise NotImplementedError
+    # Calculate number of sensitivities
+    num_sensitivities = len(sensitivity)
+
+    # Create a figure for plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot histograms for each sensitivity setting
+    for idx, sens in enumerate(sensitivity):
+        hist_data = pixel_data[:, idx::num_sensitivities].ravel()  # Select every num_sensitivities-th column
+        ax.hist(hist_data, bins=50, alpha=1, ec="k", density=True, histtype='stepfilled', label=f"Sensitivity {sens}")
+
+ 
+    
+    ax.set_title(f"x = {x} | y = {y}")
+    ax.set_xlabel("Pixel Intensity")
+    ax.set_ylabel("Density")
+    ax.legend()
+
+    # Display the plot
+    plt.show()
+
 
 def get_pixel_location(img_shape,N_x,N_y):
+    #raise NotImplementedError
     """
     
     Takes the shape of an image and number of to be gridded points in X and Y direction 
@@ -56,4 +68,18 @@ def get_pixel_location(img_shape,N_x,N_y):
     Output:
     
     """
-    raise NotImplementedError
+    height, width = img_shape[0], img_shape[1]
+
+    # Calculate step sizes
+    step_x = (width - 1) / (N_x + 1)
+    step_y = (height - 1) / (N_y + 1)
+
+    # Generate 1D arrays of x and y coordinates
+    x_coords = np.arange(step_x, width, step_x, dtype=np.uint16)
+    y_coords = np.arange(step_y, height, step_y, dtype=np.uint16)
+
+    # Use meshgrid to create 2D matrices of x and y coordinates
+    X, Y = np.meshgrid(x_coords, y_coords, indexing='ij')
+
+    return X, Y
+    #raise NotImplementedError

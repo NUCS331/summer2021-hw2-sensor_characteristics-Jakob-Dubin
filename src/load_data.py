@@ -39,7 +39,19 @@ def load_data(folder,numImages=200,height=600,width=800):
     returns:
         imgs (np.array): The 200 images as monochromatic images in uint8 type format
     """
-    raise NotImplementedError
+    imgs = []
+    folder = 'pic//HW2_Data//' + folder
+    #print(folder)
+    for path in glob.glob(folder + '/*.Raw'):
+        image = np.fromfile(path, dtype=np.uint8, sep="")
+        image = np.reshape(image, (600, 800))
+        #image = convert_uint16_to_uint8(image)
+        imgs.append(image)
+    imgs = np.transpose(np.array(imgs), (1, 2, 0))
+    return imgs
+
+
+    #raise NotImplementedError
 
 def load_dataset():
     """
@@ -55,4 +67,12 @@ def load_dataset():
         sensitivy (np.array): A numpy array containing [0,1,3,9,14,18]
     
     """
-    raise NotImplementedError
+    test = load_data('dark0')
+    dark = np.zeros(test.shape + (6,),dtype=np.uint8)
+    imgs = np.zeros(test.shape + (6,),dtype=np.uint8)
+    sensitivity = [0,1,3,9,14,18]
+    for k in range(6):
+        dark[:,:,:,k] = load_data('dark' + str(sensitivity[k]))
+        imgs[:,:,:,k] = load_data('gain' + str(sensitivity[k]))
+        
+    return dark, imgs, sensitivity
