@@ -207,13 +207,12 @@ def plot_images(data, sensitivity, statistic,color_channel):
 
     if len(sensitivity) != data.shape[3]:
         raise ValueError("Length of sensitivity array must match the number of sensitivity settings in the data.")
-
     num_sensitivities = len(sensitivity)
     cols = 3
-    rows = (num_sensitivities + cols - 1) // cols  # Calculate the required number of rows for subplots
+    rows = int(np.ceil(num_sensitivities / cols))
     fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
     axes = axes.flatten()
-
+    
     for i in range(num_sensitivities):
         ax = axes[i]
         img_stack = data[:, :, color_channel, i]  # Extract images for the current sensitivity and color channel
@@ -224,24 +223,24 @@ def plot_images(data, sensitivity, statistic,color_channel):
             continue  # Skip if no data is present
 
         if statistic == 'Mean':
-            img_stat = np.mean(img_stack, axis=0)  # Mean across the color channel
+            img_stat = np.mean(img_stack, axis=0)  # Mean across the spatial dimensions
             title = 'Mean'
         elif statistic == 'Variance':
-            img_stat = np.var(img_stack, axis=0)  # Variance across the color channel
+            img_stat = np.var(img_stack, axis=0)  # Variance across the spatial dimensions
             title = 'Variance'
         elif statistic == 'standard deviation':
-            img_stat = np.std(img_stack, axis=0)  # Standard deviation across the color channel
+            img_stat = np.std(img_stack, axis=0)  # Standard deviation across the spatial dimensions
             title = 'Standard Deviation'
 
         plt.sca(ax)
         plot_with_colorbar(img_stat, vmax=255)
         ax.set_title(f'{title} for Sensitivity {sensitivity[i]}')
         ax.axis('off')
-
+    
     # Hide any extra subplots
     for i in range(num_sensitivities, len(axes)):
         fig.delaxes(axes[i])
-
+    
     plt.tight_layout()
     plt.show()
     
@@ -364,22 +363,17 @@ def plot_read_noise_fit(sigma_read, sigma_ADC, gain, delta, color_channel=0):
     returns:
         void, but show plots!
     """
-    
-if color_channel not in [0, 1, 2]:
+    #raise ValueError("Color index must be 0 (Red), 1 (Green), or 2 (Blue).")
+    if color_channel not in [0, 1, 2]:
         raise ValueError("Color index must be 0 (Red), 1 (Green), or 2 (Blue).")
 
-    num_sensitivities = len(sigma_read)
     color_map = ['Red', 'Green', 'Blue']
     color_name = color_map[color_channel]
 
     plt.figure(figsize=(10, 6))
 
     # Extract data for the specified color channel
-    if isinstance(sigma_read, tuple):
-        sigma_read_channel = sigma_read[color_channel]
-    else:
-        sigma_read_channel = sigma_read[:, color_channel]
-        
+    sigma_read_channel = sigma_read[:, color_channel]
     sigma_ADC_channel = sigma_ADC[:, color_channel]
     gain_channel = gain[:, color_channel]
     delta_channel = delta[:, color_channel]
@@ -388,10 +382,10 @@ if color_channel not in [0, 1, 2]:
     fitted_sigma_read = gain_channel * sigma_ADC_channel + delta_channel
 
     # Plot actual data points
-    plt.scatter(sigma_ADC_channel, sigma_read_channel, alpha=0.7, label='Data Points')
+    plt.scatter(gain_channel, sigma_read_channel, alpha=0.7, label='Data Points')
 
     # Plot fitted line
-    plt.plot(sigma_ADC_channel, fitted_sigma_read, color='red', linewidth=2, label='Fitted Line')
+    plt.plot(gain_channel, fitted_sigma_read, color='red', linewidth=2, label='Fitted Line')
 
     # Add titles and labels
     plt.xlabel('Gain')

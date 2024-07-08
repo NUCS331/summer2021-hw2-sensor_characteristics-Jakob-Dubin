@@ -116,25 +116,21 @@ def fit_linear_polynom_to_read_noise(delta, gain):
         sigma_read[channel] = coeffs[0]
         sigma_ADC[channel] = coeffs[1]
     
-    return sigma_read, sigma_ADC"""
+    return sigma_read, sigma_ADC
     #raise NotImplementedError
     if delta.shape[0] < delta.shape[1]:
         delta = delta.T
     if gain.shape[0] < gain.shape[1]:
         gain = gain.T
     
-    # Validate shapes
-    if delta.shape != gain.shape:
-        raise ValueError("Shapes of delta and gain must match.")
-    
-    # Number of color channels
+
     num_channels = delta.shape[1]
     
-    # Initialize arrays to store results
+
     sigma_read = np.zeros(num_channels)
     sigma_ADC = np.zeros(num_channels)
     
-    # Fit linear polynomial for each color channel
+
     for channel in range(num_channels):
         # Use numpy's lstsq for linear regression
         A = np.vstack([gain[:, channel], np.ones(len(gain[:, channel]))]).T
@@ -149,7 +145,15 @@ def fit_linear_polynom_to_read_noise(delta, gain):
         sigma_read[channel] = slope
         sigma_ADC[channel] = intercept
     
-    return sigma_read, sigma_ADC
+    return sigma_read, sigma_ADC"""
+    #raise NotImplementedError
+    sigma_read = np.zeros(3)
+    sigma_ADC = np.zeros(3)
+    for c in range(3):
+        p = np.polyfit(gain[c,:]**2, delta[c,:], 1)
+        sigma_read[c] = p[0]
+        sigma_ADC[c] = p[1]
+    return sigma_read, sigma_ADCv
 
     
     
@@ -164,5 +168,31 @@ def calc_SNR_for_specific_gain(mean,var):
     output:
           SNR(np.ndarray): the computed SNR vs. mean of the captured image dataset - #(255, Num_gain)
     """
+    assert mean.shape == var.shape, "Mean and variance arrays must have the same shape"
+    
+    # Compute the standard deviation from the variance
+    stddev = np.sqrt(var)
+    
+    # Initialize an array to store the SNR values
+    Num_gain = mean.shape[-1]
+    SNR = np.zeros((256, Num_gain))
+    
+    # Compute the SNR for each bin in the range [0, 255]
+    for gain in range(Num_gain):
+        for i in range(256):
+            # Select pixels with mean values in the current bin
+            mask = (mean[..., gain] >= i) & (mean[..., gain] < i + 1)
+            
+            # Calculate the mean and standard deviation for the current bin
+            bin_mean = np.mean(mean[mask, gain])
+            bin_stddev = np.mean(stddev[mask, gain])
+            
+            # Compute the SNR (handle the case where bin_stddev is zero)
+            if bin_stddev > 0:
+                SNR[i, gain] = bin_mean / bin_stddev
+            else:
+                SNR[i, gain] = 0
+    
+    return SNR
     
     raise NotImplementedError

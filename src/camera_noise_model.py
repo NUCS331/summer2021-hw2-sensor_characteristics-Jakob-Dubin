@@ -16,10 +16,26 @@ def simulate_noisy_images(images,gain,sigma_read,sigma_adc,fwc,num_ims=20):
         noisy_images(np.ndarray): (H, W, #colors, #images, #sensitivity)
     """
     
-    trials = np.ones(num_ims)
-    # first apply poisson noise and cap the photon count at the full-well capacity
-    noisy_images = gain[None,None,:,None,:] * np.minimum(np.random.poisson(trials[None,None,None,:,None] * images[:,:,:,None,None]), fwc)
-    # then add read noise
-    noisy_images += gain[None,None,:,None,:]**2 * sigma_read[None,None,:,None,None]*np.random.normal(size=noisy_images.shape) + sigma_adc[None,None,:,None,None]*np.random.normal(size=noisy_images.shape)
-    
+    H, W, num_colors = images.shape
+    num_sensitivity = len(gain)
+
+    # Initialize the noisy images array
+    noisy_images = np.zeros((H, W, num_colors, num_ims, num_sensitivity))
+
+    for s in range(num_sensitivity):
+        for c in range(num_colors):
+            for n in range(num_ims):
+                # Apply Poisson noise
+                photon_noise = np.random.poisson(images[:, :, c])
+                photon_noise = np.minimum(photon_noise, fwc)
+                
+                # Scale by gain
+                signal = photon_noise * gain[s]
+                
+                # Add read noise and ADC noise
+                read_noise = np.random.normal(0, sigma_read[c] * gain[s], size=(H, W))
+                adc_noise = np.random.normal(0, sigma_adc[c], size=(H, W))
+                
+                noisy_images[:, :, c, n, s] = signal + read_noise + adc_noise
+
     return np.uint8(noisy_images)
